@@ -14,6 +14,10 @@ RSpec.describe AddressesController, type: :routing do
       expect(get: "/addresses/1").to route_to("addresses#show", id: "1")
     end
 
+    it "routes to #forecast" do
+      expect(get: "/forecast/1").to route_to("addresses#forecast", id: "1")
+    end
+
     it "routes to #edit" do
       expect(get: "/addresses/1/edit").to route_to("addresses#edit", id: "1")
     end
