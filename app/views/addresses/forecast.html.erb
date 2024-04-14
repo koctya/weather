@@ -1,0 +1,36 @@
+<div class="mx-auto md:w-2/3 w-full flex">
+  <div class="mx-auto">
+    <% if notice.present? %>
+      <p class="py-2 px-3 bg-green-50 mb-5 text-green-500 font-medium rounded-lg inline-block" id="notice"><%= notice %></p>
+    <% end %>
+
+    <p class="my-5">
+    <strong class="block font-medium mb-1">Matched address: </strong>
+    <%=  @location[:mached_addr] %> 
+    </p>
+    <h2> <%= @forecast[0]["name"] %>
+    <ul>
+        <li> Temperature: <%= "#{@forecast[0]["temperature"]} #{@forecast[0]["temperatureUnit"]}" %> </li>
+        <li> Humidity:    <%= @forecast[0]["relativeHumidity"]["value"] %>%</li>
+        <li> Wind Speed: <%= @forecast[0]["windSpeed"] %></li>
+        <li> Wind Direction: <%= @forecast[0]["windDirection"] %></li>
+        <li> Forecast: <%= @forecast[0]["shortForecast"] %></li>
+    </ul>
+
+    <p class="my-5">
+    <strong class="block font-medium mb-1">Detailed Forecast: </strong>
+    <%=  @forecast[0]["detailedForecast"] %> 
+    </p>
+    <hr>
+    <% (2..12).each do |day| %>
+    <h2> <%= @forecast[day]["name"] %>
+    <ul>
+        <li> Temperature: <%= "#{@forecast[day]["temperature"]} #{@forecast[day]["temperatureUnit"]}" %> </li>
+        <li> Forecast: <%= @forecast[day]["shortForecast"] %></li>
+        <hr>
+    </ul>
+    <% end %>
+
+    <%= link_to "Back to addresses", addresses_path, class: "ml-2 rounded-lg py-3 px-5 bg-gray-100 inline-block font-medium" %>
+  </div>
+</div>

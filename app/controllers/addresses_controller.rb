@@ -1,7 +1,7 @@
 class AddressesController < ApplicationController
   require "faraday"
   require 'uri'
-  before_action :set_address, only: %i[ show edit update destroy weather]
+  before_action :set_address, only: %i[ show edit update destroy forecast]
 
   # GET /addresses or /addresses.json
   def index
@@ -22,10 +22,10 @@ class AddressesController < ApplicationController
   def edit
   end
 
-  # GET /addresses/1/weather
-  def weather
+  # GET /addresses/1/forecast
+  def forecast
     @location = fetch_location(@address)
-    # @weather = fetch_forcast(@location)
+    @forecast = fetch_forcast(@location)
   end
   
   # POST /addresses or /addresses.json
@@ -79,46 +79,64 @@ class AddressesController < ApplicationController
     end
 
     def fetch_location(address)
-      @faraday ||= begin
-      options = {
-        request: {
-          open_timeout: 1,
-          read_timeout: 1,
-          write_timeout: 1
-        }
-      }
-      street = URI.encode_uri_component(address.street)
-      city=URI.encode_uri_component(address.city)
       geolocation_url = "https://geocoding.geo.census.gov/geocoder/locations/address" # ?street=#{street}&city=#{city}&state=#{address.state}&zip=#{address.zip}&benchmark=Public_AR_Current&format=json"
-      # binding.break
-      conn = Faraday.new(url: geolocation_url, 
-        params: {street: street, 
-          city: city, 
-          state: address.state, 
-          zip: address.zip,
-          benchmark: "Public_AR_Current",
-          format: "json"
-        }, **options) do |config|
-      
-        config.response :json
-        config.response :raise_error
-        config.response :logger, Rails.logger, headers: true, bodies: true, log_level: :debug 
-        end
-        config.adapter :net_http
-      end
-      # binding.break
-      response = conn.get()
+      params =  {street: URI.encode_uri_component(address.street), 
+        city: URI.encode_uri_component(address.city), 
+        state:URI.encode_uri_component(address.state), 
+        zip: URI.encode_uri_component(address.zip),
+        benchmark: "Public_AR_Current",
+        format: "json"
+      }
+      response = faraday_conn.get(geolocation_url, params)
       if response.status == 200 
         match = response.body["result"]["addressMatches"].first
         lat = match["coordinates"]["x"]
         long = match["coordinates"]["y"]
-        mached_addr = match["addressComponents"]["matchedAddress"]
+        mached_addr = match["matchedAddress"]
         location = {lat: lat, long: long, mached_addr: mached_addr}
       else
         location = nil
       end
       # binding.break
       location
+    end
+
+    def fetch_forcast(location)
+      lat = sprintf("%0.04f", location[:lat])
+      long = sprintf("%0.04f", location[:long])
+      weather_url = "https://api.weather.gov/points/#{long},#{lat}" 
+      response = faraday_conn.get(weather_url)
+      # binding.break
+
+      if response.status == 200 
+        forcast_url = response.body["properties"]["forecast"]
+        hourly_forcast_url = response.body["properties"]["forecastHourly"]
+      else
+        "Error fectching Forcast"
+      end
+
+      response = faraday_conn.get(forcast_url)
+      # binding.break
+      response.body["properties"]["periods"]
+    end
+
+    def faraday_conn() 
+      @faraday ||= begin
+        options = {
+          request: {
+            open_timeout: 1,
+            read_timeout: 1,
+            write_timeout: 1
+          }
+        }
+        conn = Faraday.new(**options) do |config|
+          config.response :json
+          config.response :raise_error
+          config.response :logger, Rails.logger, headers: true, bodies: true, log_level: :debug 
+          config.adapter :net_http
+        end
+      end
+  
     end
 
 end
