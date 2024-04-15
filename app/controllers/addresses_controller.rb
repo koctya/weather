@@ -78,16 +78,6 @@ class AddressesController < ApplicationController
       params.require(:address).permit(:street, :city, :state, :zip)
     end
 
-    def get_with_cache(path, params: {}, expires_in: 5.minutes)
-  # Compute a cache key that is unique for the API, path, and query params
-  request_fingerprint = Digest::SHA256.hexdigest({ path:, params: }.inspect)
-  key = "ExampleApi/get/#{request_fingerprint}"
-
-  Rails.cache.fetch(key, expires_in:) do
-    faraday.get(path, params).body
-  end
-end
-
     def fetch_location(address, expires_in: 30.minute)
       geolocation_url = "https://geocoding.geo.census.gov/geocoder/locations/address" # ?street=#{street}&city=#{city}&state=#{address.state}&zip=#{address.zip}&benchmark=Public_AR_Current&format=json"
       params =  {street: URI.encode_uri_component(address.street), 
@@ -117,7 +107,8 @@ end
       lat = sprintf("%0.04f", location[:lat])
       long = sprintf("%0.04f", location[:long])
       weather_url = "https://api.weather.gov/points/#{long},#{lat}" 
-      response = faraday_conn.get(weather_url)
+      response = get_with_cache(weather_url)
+
       # binding.break
 
       if response.status == 200 
@@ -127,9 +118,19 @@ end
         "Error fectching Forcast"
       end
 
-      response = faraday_conn.get(forcast_url)
+      response = get_with_cache(forcast_url)
       # binding.break
       response.body["properties"]["periods"]
+    end
+
+    def get_with_cache(path, expires_in: 30.minutes)
+      # Compute a cache key that is unique for the API, path
+      request_fingerprint = Digest::SHA256.hexdigest({ path: }.inspect)
+      key = "points/#{request_fingerprint}"
+    
+      Rails.cache.fetch(key, expires_in:) do
+        faraday_conn.get(path)
+      end
     end
 
     def faraday_conn() 

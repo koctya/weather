@@ -34,10 +34,15 @@ Things you may want to cover:
 
 * Database initialization
 
+    > rails db:migrate
+
 * How to run the test suite
+
+    > rspec
 
 * Services (job queues, cache servers, search engines, etc.)
 
 * Deployment instructions
+    - Run rails dev:cache to toggle caching in Dev.
 
 * ...
