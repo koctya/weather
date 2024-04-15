@@ -78,7 +78,8 @@ class AddressesController < ApplicationController
       params.require(:address).permit(:street, :city, :state, :zip)
     end
 
-    def fetch_location(address, expires_in: 30.minute)
+    # fetch the geocoded location for given address.
+    def fetch_location(address)
       geolocation_url = "https://geocoding.geo.census.gov/geocoder/locations/address" # ?street=#{street}&city=#{city}&state=#{address.state}&zip=#{address.zip}&benchmark=Public_AR_Current&format=json"
       params =  {street: URI.encode_uri_component(address.street), 
         city: URI.encode_uri_component(address.city), 
@@ -94,22 +95,18 @@ class AddressesController < ApplicationController
         long = match["coordinates"]["y"]
         mached_addr = match["matchedAddress"]
         location = {lat: lat, long: long, mached_addr: mached_addr}
-      # binding.break
       else
         location = nil
-      # binding.break
       end
-      # binding.break
       location
     end
 
+    # fetch forecast for location from National weather service API.
     def fetch_forcast(location)
       lat = sprintf("%0.04f", location[:lat])
       long = sprintf("%0.04f", location[:long])
       weather_url = "https://api.weather.gov/points/#{long},#{lat}" 
       response = get_with_cache(weather_url)
-
-      # binding.break
 
       if response.status == 200 
         forcast_url = response.body["properties"]["forecast"]
@@ -119,7 +116,6 @@ class AddressesController < ApplicationController
       end
 
       response = get_with_cache(forcast_url)
-      # binding.break
       response.body["properties"]["periods"]
     end
 
@@ -133,6 +129,7 @@ class AddressesController < ApplicationController
       end
     end
 
+    # create a Faraday connection.
     def faraday_conn() 
       @faraday ||= begin
         options = {

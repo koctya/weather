@@ -85,21 +85,6 @@ RSpec.describe "/addresses", type: :request do
         expect(response).to redirect_to(address_url(Address.last))
       end
     end
-
-    context "with invalid parameters" do
-      xit "does not create a new Address" do
-        expect {
-          post addresses_url, params: { address: invalid_attributes }
-        }.to change(Address, :count).by(0)
-      end
-
-    
-      xit "renders a response with 422 status (i.e. to display the 'new' template)" do
-        post addresses_url, params: { address: invalid_attributes }
-        expect(response).to have_http_status(:unprocessable_entity)
-      end
-    
-    end
   end
 
   describe "PATCH /update" do
